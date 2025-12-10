@@ -5,14 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>AgriManager V41</title>
+    <title>AgriManager V45</title>
     <style>
         :root {
             --primary: #8DAE42; --primary-dim: #6a8530; --accent: #FFD700; --danger: #CE181E;
             --bg-dark: #121212; --surface: #1E1E1E; --input-bg: #2A2A2A; --border: #333;
             --text: #ffffff; --text-muted: #999;
             --transfer: #e67e22; --truffe: #a1887f; --contract: #3498db; --phyto: #27ae60;
-            /* Animation */
             --metal: #bdc3c7; --metal-dark: #7f8c8d;
         }
 
@@ -21,10 +20,10 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
             margin: 0; background: var(--bg-dark); color: var(--text);
             display: flex; flex-direction: column; height: 100vh; overflow: hidden; font-size: 16px;
-            padding-bottom: 80px; /* Espace Nav */
+            padding-bottom: 80px;
         }
 
-        /* --- UI ELEMENTS --- */
+        /* --- HEADER & NAV --- */
         .header {
             padding: 15px; background: rgba(30,30,30,0.95); backdrop-filter: blur(10px);
             border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;
@@ -33,6 +32,17 @@
         .header h2 { margin: 0; font-size: 1.2rem; color: var(--primary); font-weight: 800; text-transform: uppercase; }
         .site-badge { background: #333; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; color: #ccc; font-weight: bold; }
 
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 75px;
+            background: #161616; border-top: 1px solid #333;
+            display: flex; justify-content: space-around; align-items: center;
+            z-index: 100; padding-bottom: env(safe-area-inset-bottom);
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #555; flex: 1; height: 100%; text-decoration: none; border: none; background: none; font-size: 0.7rem; }
+        .nav-item.active { color: var(--primary); }
+        .nav-icon { font-size: 1.6rem; margin-bottom: 4px; }
+
+        /* --- CONTENT --- */
         .screen { display: none; padding: 15px; overflow-y: auto; height: 100%; padding-bottom: 100px; animation: fadeIn 0.3s; }
         .screen.active { display: block; }
         @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
@@ -42,18 +52,16 @@
             border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.2);
         }
 
+        /* --- INPUTS --- */
         label { display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; }
-        
-        /* CORRECTION INPUT CSS ICI */
         input, select {
             width: 100%; height: 50px; background: #1a1a1a; border: 1px solid #444; border-radius: 8px;
             color: white; padding: 0 15px; font-size: 1.1rem; margin-bottom: 15px; 
-            -webkit-appearance: none; /* Chrome/Safari */
-            appearance: none;         /* Standard */
+            -webkit-appearance: none; appearance: none;
         }
         input:focus, select:focus { border-color: var(--primary); outline: none; background: #222; }
 
-        /* BOUTONS */
+        /* --- BUTTONS --- */
         .btn {
             width: 100%; padding: 15px; border-radius: 8px; border: none; font-size: 1rem; font-weight: bold;
             color: white; background: var(--primary); cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px;
@@ -66,7 +74,11 @@
         .btn-phyto { background: var(--phyto); }
         .btn-sm { padding: 8px 15px; width: auto; font-size: 0.85rem; margin:0; height: 40px; }
 
-        /* GRILLE SILOS */
+        /* --- STOCKS & SILOS --- */
+        .view-switch { display: flex; background: #222; border-radius: 10px; padding: 4px; margin-bottom: 20px; }
+        .switch-btn { flex: 1; padding: 10px; border: none; background: transparent; color: #666; font-weight: bold; border-radius: 8px; transition: 0.2s; }
+        .switch-btn.active { background: var(--primary); color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+
         .silo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .silo-item {
             background: #222; border-radius: 12px; padding: 15px; text-align: center; border: 2px solid #333; 
@@ -77,49 +89,40 @@
         .silo-bar-fill { width: 100%; background: var(--primary); position: absolute; bottom: 0; transition: height 1s; }
         .silo-pct { position: absolute; top: 5px; right: 15px; font-size: 0.7rem; color: #888; font-weight: bold; }
 
-        /* VIEW SWITCHER (STOCKS) */
-        .view-switch { display: flex; background: #222; border-radius: 10px; padding: 4px; margin-bottom: 20px; }
-        .switch-btn { flex: 1; padding: 10px; border: none; background: transparent; color: #666; font-weight: bold; border-radius: 8px; transition: 0.2s; }
-        .switch-btn.active { background: var(--primary); color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
-
-        /* TABS INTERNES */
+        /* --- TABS --- */
         .sub-tab-container { display:flex; background:#222; border-radius:12px; padding:5px; margin-bottom:20px; overflow-x: auto; white-space: nowrap; gap: 5px; }
         .sub-tab-btn { flex: 0 0 auto; padding: 10px 18px; border-radius: 8px; border: none; background: transparent; color: #777; font-size: 0.95rem; font-weight: bold; }
         .sub-tab-btn.active { background: var(--primary); color: white; }
 
-        /* LISTES */
+        /* --- LISTES & TRUFFES --- */
         .list-row { padding: 15px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; background: #222; }
         .stock-card { background: var(--input-bg); border-left: 4px solid var(--primary); padding: 15px; margin-bottom: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem; cursor: pointer; }
         
-        /* TRUFFE ITEMS */
         .truffe-item { background: #252525; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--truffe); display: flex; justify-content: space-between; align-items: center; }
         .truffe-item.urgent { border-left-color: var(--danger); background: rgba(206, 24, 30, 0.1); }
-        
-        /* MODE EDITION TRUFFE */
         .truffe-item.edit-mode { display: block; border-left-color: #555; background: #161616; border: 1px dashed #555; }
         .truffe-edit-row { display: flex; gap: 10px; margin-bottom: 10px; }
         .edit-input { background: #000; border: 1px solid #444; padding: 0 10px; height: 45px; margin: 0; width: 100%; border-radius: 6px; color: white; font-size: 1rem; }
         .edit-label { font-size: 0.7rem; color: #888; margin-bottom: 2px; display: block; }
 
-        /* BOTTOM NAV */
-        .bottom-nav {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 75px;
-            background: #161616; border-top: 1px solid #333;
-            display: flex; justify-content: space-around; align-items: center;
-            z-index: 100; padding-bottom: env(safe-area-inset-bottom);
-        }
-        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #555; flex: 1; height: 100%; text-decoration: none; border: none; background: none; font-size: 0.7rem; }
-        .nav-item.active { color: var(--primary); }
-        .nav-icon { font-size: 1.6rem; margin-bottom: 4px; }
+        /* --- CONTRACT LIST ITEM --- */
+        .contract-item { background: #222; border-radius: 8px; padding: 15px; margin-bottom: 10px; border-left: 4px solid var(--contract); }
+        .progress-bar-bg { width: 100%; height: 8px; background: #111; border-radius: 4px; margin-top: 10px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background: var(--contract); transition: width 0.5s; }
 
-        /* MODAL */
+        /* --- MODAL --- */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; display: none; justify-content: center; align-items: center; }
+        .custom-modal-box { background: #222; border: 1px solid var(--border); width: 85%; max-width: 400px; padding: 25px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; animation: fadeIn 0.2s ease-out; }
+        .custom-modal-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; color: var(--primary); }
+        .custom-modal-text { margin-bottom: 20px; font-size: 1rem; color: #ddd; }
+        .custom-modal-actions { display: flex; gap: 10px; justify-content: center; }
+        
         .modal-card { background: #1a1a1a; width: 90%; max-height: 80vh; overflow-y: auto; border-radius: 12px; padding: 20px; border: 1px solid var(--border); }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th { text-align: left; color: var(--text-muted); font-size: 0.8rem; border-bottom: 1px solid #444; padding: 10px 5px; }
         td { border-bottom: 1px solid #333; padding: 15px 5px; font-size: 1rem; }
 
-        /* TOAST */
+        /* --- TOAST --- */
         #toast { position: fixed; top: 20px; right: 20px; background: #333; color: white; padding: 15px 25px; border-radius: 50px; border: 2px solid var(--primary); font-weight: bold; z-index: 10000; transform: translateX(150%); transition: transform 0.3s; display: flex; align-items: center; gap: 10px; }
         #toast.show { transform: translateX(0); }
 
@@ -131,6 +134,25 @@
 <body>
 
     <div id="toast">✅ Action effectuée</div>
+
+    <div id="modal-alert" class="modal-overlay">
+        <div class="custom-modal-box">
+            <div class="custom-modal-title" id="m-title">Info</div>
+            <div class="custom-modal-text" id="m-text">Message</div>
+            <div class="custom-modal-actions"><button class="btn btn-sm" onclick="closeModalAlert()">OK</button></div>
+        </div>
+    </div>
+
+    <div id="modal-confirm" class="modal-overlay">
+        <div class="custom-modal-box">
+            <div class="custom-modal-title">Confirmation</div>
+            <div class="custom-modal-text" id="c-text">Êtes-vous sûr ?</div>
+            <div class="custom-modal-actions">
+                <button class="btn btn-sm" style="background:#444" onclick="closeConfirm(false)">Annuler</button>
+                <button class="btn btn-sm btn-danger" id="c-yesBtn">Confirmer</button>
+            </div>
+        </div>
+    </div>
 
     <div id="modal-silo-detail" class="modal-overlay" onclick="closeModal()">
         <div class="modal-card" onclick="event.stopPropagation()">
@@ -246,11 +268,12 @@
             <div class="card" style="border-left:4px solid var(--contract)">
                 <h4 style="margin-top:0; color:var(--contract)">Nouveau Contrat</h4>
                 <div class="row"><div class="col"><label>N°</label><input type="text" id="ctrNum"></div><div class="col"><label>Date</label><input type="date" id="ctrDate"></div></div>
-                <label>Vendeur</label><select id="ctrSeller"></select>
                 <div class="row"><div class="col"><label>Céréale</label><select id="ctrGrain"></select></div><div class="col"><label>Tonnes</label><input type="number" id="ctrTons" inputmode="decimal"></div></div>
                 <label>Prix (€/T)</label><input type="number" id="ctrPrice" inputmode="decimal">
                 <button class="btn btn-contract" onclick="createContract()">Enregistrer</button>
             </div>
+            <h3>Contrats en cours</h3>
+            <div id="contractList"></div>
         </div>
 
         <div id="tab-data" class="sub-tab" style="display:none;">
@@ -350,7 +373,7 @@
         });
         function updateCloud() { set(dbRef, db); }
 
-        function renderAll() { renderSilos(); populateSelects(); renderTruffes(); renderStocks(); renderDataLists(); renderPhyto(); }
+        function renderAll() { renderSilos(); populateSelects(); renderTruffes(); renderStocks(); renderDataLists(); renderPhyto(); renderContracts(); }
 
         /* --- 1. STOCKS --- */
         window.switchStockView = (mode) => {
@@ -404,9 +427,10 @@
             const cl = db.clients.map(c=>`<option>${c}</option>`).join('');
             const gr = db.grains.map(g=>`<option>${g.name}</option>`).join('');
             const sl = db.silos.map(s=>`<option value="${s.id}">${s.name} (${s.content||'-'})</option>`).join('');
-            const slFull = db.silos.filter(s=>s.current>0).map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
-            const ctr = '<option value="">-- Hors Contrat --</option>'+db.contracts.filter(c=>!c.finished).map(c=>`<option value="${c.id}">${c.num} - ${c.seller}</option>`).join('');
-            document.getElementById('inClient').innerHTML = cl; document.getElementById('ctrSeller').innerHTML = cl; document.getElementById('outOwnerSplit').innerHTML = cl; document.getElementById('tiSeller').innerHTML = cl; document.getElementById('tiBuyer').innerHTML = cl;
+            const slFull = db.silos.filter(s=>s.current>0).map(s=>`<option value="${s.id}">${s.name} (${s.content})</option>`).join('');
+            const ctr = '<option value="">-- Hors Contrat --</option>'+db.contracts.filter(c=>!c.finished).map(c=>`<option value="${c.id}">N°${c.num} (${c.grain})</option>`).join('');
+            document.getElementById('inClient').innerHTML = cl; document.getElementById('outOwnerSplit').innerHTML = cl; document.getElementById('tiSeller').innerHTML = cl; document.getElementById('tiBuyer').innerHTML = cl;
+            // Correction V43: Pas de Vendeur sur contrat donc pas de ctrSeller
             document.getElementById('inGrain').innerHTML = gr; document.getElementById('ctrGrain').innerHTML = gr;
             document.getElementById('inSilo').innerHTML = sl; document.getElementById('tpTo').innerHTML = sl;
             document.getElementById('outSilo').innerHTML = slFull; document.getElementById('tpFrom').innerHTML = slFull; document.getElementById('tiSilo').innerHTML = slFull;
@@ -450,11 +474,21 @@
         window.submitSortie = () => {
             const tot = parseFloat(document.getElementById('outTotal').value);
             const assigned = splitList.reduce((a,b)=>a+b.w, 0);
+            const sid = document.getElementById('outSilo').value;
+            const s = db.silos.find(x=>x.id==sid);
+            const cid = document.getElementById('outContract').value;
+
             if(Math.abs(tot-assigned)>5) return alert('Ecart de poids !');
-            const s = db.silos.find(x=>x.id==document.getElementById('outSilo').value);
+            
+            // Check Contract Grain Match (V44)
+            if(cid) {
+                const ctr = db.contracts.find(x=>x.id==cid);
+                if(ctr && s.content !== ctr.grain) return alert(`Erreur : Le silo contient du ${s.content} mais le contrat est pour du ${ctr.grain} !`);
+            }
+
             splitList.forEach(sp => { s.owners[sp.owner]-=sp.w; if(s.owners[sp.owner]<=0) delete s.owners[sp.owner]; });
             s.current -= tot; if(s.current<=0){s.current=0; s.content=null;}
-            const cid = document.getElementById('outContract').value;
+            
             if(cid) { const ctr = db.contracts.find(x=>x.id==cid); if(ctr) ctr.delivered = (ctr.delivered||0) + tot; }
             updateCloud(); splitList=[]; renderSplits(); document.getElementById('outTotal').value=''; toast('Sortie Validée');
         }
@@ -470,10 +504,34 @@
             if((s.owners[sel]||0)<w) return alert('Stock insuffisant');
             s.owners[sel]-=w; s.owners[buy]=(s.owners[buy]||0)+w; updateCloud(); toast('Cession OK');
         }
+        
+        // --- CONTRATS (Fixed V43) ---
         window.createContract = () => {
-            db.contracts.push({id:Date.now(), num:document.getElementById('ctrNum').value, seller:document.getElementById('ctrSeller').value, grain:document.getElementById('ctrGrain').value, finished:false});
-            updateCloud(); toast('Contrat Créé');
+            const n=document.getElementById('ctrNum').value, t=parseFloat(document.getElementById('ctrTons').value);
+            if(!n || !t) return alert('Info manquantes');
+            db.contracts.push({id:Date.now(), num:n, seller:null, grain:document.getElementById('ctrGrain').value, weightT:t, price:parseFloat(document.getElementById('ctrPrice').value)||0, date:document.getElementById('ctrDate').value, finished:false, delivered:0});
+            updateCloud(); toast('Contrat Créé'); document.getElementById('ctrNum').value=''; populateSelects();
         }
+        
+        window.renderContracts = () => {
+            const c = document.getElementById('contractList'); c.innerHTML='';
+            db.contracts.filter(ct=>!ct.finished).forEach(ct => {
+                const pct = Math.min(100, Math.round((ct.delivered / (ct.weightT*1000))*100));
+                c.innerHTML += `
+                <div class="contract-item">
+                    <div style="display:flex; justify-content:space-between; font-weight:bold; color:white;">
+                        <span>N°${ct.num} (${ct.grain})</span>
+                        <span>${(ct.weightT)}T</span>
+                    </div>
+                    <div style="font-size:0.8rem; color:#aaa; margin-top:5px;">${ct.price?ct.price+'€/T':''} - Prévu: ${ct.date||'?'}</div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+                    <div style="text-align:right; font-size:0.8rem; margin-top:5px;">${Math.round(ct.delivered/1000)}T livrées (${pct}%)</div>
+                    <button class="btn btn-sm btn-danger" style="margin-top:10px; width:100%" onclick="delContract(${ct.id})">Supprimer</button>
+                </div>`;
+            });
+        }
+        window.delContract = (id) => { if(confirm('Supprimer ?')){ db.contracts=db.contracts.filter(x=>x.id!==id); updateCloud(); toast('Supprimé'); } }
+
         window.addData = (t) => {
             const v=document.getElementById(t==='c'?'newClient':'newGrain').value;
             if(v) { if(t==='c') db.clients.push(v); else db.grains.push({name:v, ps:parseFloat(document.getElementById('newGrainPS').value)||76}); updateCloud(); toast('Ajouté'); }
@@ -495,7 +553,7 @@
             updateCloud(); document.getElementById('phQty').value=''; toast('Stock mis à jour');
         }
 
-        /* --- 4. TRUFFES (Corrected Edit Mode) --- */
+        /* --- 4. TRUFFES (V41 Fixed Edit) --- */
         window.renderTruffes = () => {
             const pList=document.getElementById('truffeListPending'), hList=document.getElementById('truffeListHistory'); pList.innerHTML=''; hList.innerHTML='';
             const pending = db.truffes.filter(t=>!t.validated).sort((a,b) => (a.deadline||'9999') > (b.deadline||'9999') ? 1 : -1);
@@ -523,7 +581,7 @@
                     html = `<div class="truffe-item ${t.deadline && new Date(t.deadline)<new Date(Date.now()+86400000*2)?'urgent':''}">
                         <div><div style="font-weight:bold; font-size:1.1rem;">${t.name}</div><div style="color:#aaa; font-size:0.85rem;">Pour: <span style="color:white; font-weight:bold;">${t.deadline?new Date(t.deadline).toLocaleDateString().slice(0,5):'-'}</span></div></div>
                         <div style="text-align:right"><div style="font-weight:bold; font-size:1.3rem;">${t.weight}g</div><div style="font-size:0.8rem;">${t.price}€</div></div>
-                        <div style="display:flex; flex-direction:column; gap:5px; margin-left:10px;"><button class="btn btn-sm" onclick="validTruffe(${t.id})">✅</button><button class="btn btn-sm btn-danger" onclick="delTruffe(${t.id})">🗑️</button></div>
+                        <div style="display:flex; flex-direction:column; gap:5px; margin-left:10px;"><button class="btn btn-sm" onclick="validTruffe(${t.id})">✅</button></div>
                     </div>`;
                 }
                 pList.innerHTML += html;
@@ -542,6 +600,10 @@
         window.setTransMode=(m)=>{ document.getElementById('trans-phys').style.display=m==='phys'?'block':'none'; document.getElementById('trans-interne').style.display=m==='interne'?'block':'none'; document.getElementById('btnModePhys').style.opacity=m==='phys'?1:0.5; document.getElementById('btnModeInterne').style.opacity=m==='interne'?1:0.5; };
         window.calcNet=(p)=>{ const t=parseFloat(document.getElementById(p+'Tare').value)||0, b=parseFloat(document.getElementById(p+'Brut').value)||0; if(t&&b) document.getElementById(p+'Net').value=Math.abs(b-t); };
         window.toast=(msg)=>{ const t=document.getElementById('toast'); t.innerText="✅ "+msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); };
+        window.alert=(msg)=>{ document.getElementById('m-text').innerText=msg; document.getElementById('modal-alert').style.display='flex'; };
+        window.closeModalAlert=()=>{ document.getElementById('modal-alert').style.display='none'; };
+        window.confirm=(msg, cb)=>{ document.getElementById('c-text').innerText=msg; const btn=document.getElementById('c-yesBtn'); const nBtn=btn.cloneNode(true); btn.parentNode.replaceChild(nBtn, btn); nBtn.onclick=()=>{cb();closeConfirm();}; document.getElementById('modal-confirm').style.display='flex'; };
+        window.closeConfirm=()=>{ document.getElementById('modal-confirm').style.display='none'; };
     </script>
 </body>
 </html>

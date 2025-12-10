@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>AgriManager V41</title>
+    <style>
+        :root {
+            --primary: #8DAE42; --primary-dim: #6a8530; --accent: #FFD700; --danger: #CE181E;
+            --bg-dark: #121212; --surface: #1E1E1E; --input-bg: #2A2A2A; --border: #333;
+            --text: #ffffff; --text-muted: #999;
+            --transfer: #e67e22; --truffe: #a1887f; --contract: #3498db; --phyto: #27ae60;
+            /* Animation */
+            --metal: #bdc3c7; --metal-dark: #7f8c8d;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            margin: 0; background: var(--bg-dark); color: var(--text);
+            display: flex; flex-direction: column; height: 100vh; overflow: hidden; font-size: 16px;
+            padding-bottom: 80px; /* Espace Nav */
+        }
+
+        /* --- UI ELEMENTS --- */
+        .header {
+            padding: 15px; background: rgba(30,30,30,0.95); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 50;
+        }
+        .header h2 { margin: 0; font-size: 1.2rem; color: var(--primary); font-weight: 800; text-transform: uppercase; }
+        .site-badge { background: #333; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; color: #ccc; font-weight: bold; }
+
+        .screen { display: none; padding: 15px; overflow-y: auto; height: 100%; padding-bottom: 100px; animation: fadeIn 0.3s; }
+        .screen.active { display: block; }
+        @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+        .card {
+            background: var(--input-bg); border-radius: 12px; padding: 20px; margin-bottom: 20px;
+            border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        label { display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; }
+        
+        /* CORRECTION INPUT CSS ICI */
+        input, select {
+            width: 100%; height: 50px; background: #1a1a1a; border: 1px solid #444; border-radius: 8px;
+            color: white; padding: 0 15px; font-size: 1.1rem; margin-bottom: 15px; 
+            -webkit-appearance: none; /* Chrome/Safari */
+            appearance: none;         /* Standard */
+        }
+        input:focus, select:focus { border-color: var(--primary); outline: none; background: #222; }
+
+        /* BOUTONS */
+        .btn {
+            width: 100%; padding: 15px; border-radius: 8px; border: none; font-size: 1rem; font-weight: bold;
+            color: white; background: var(--primary); cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: transform 0.1s;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-danger { background: var(--danger); }
+        .btn-transfer { background: var(--transfer); }
+        .btn-contract { background: var(--contract); }
+        .btn-phyto { background: var(--phyto); }
+        .btn-sm { padding: 8px 15px; width: auto; font-size: 0.85rem; margin:0; height: 40px; }
+
+        /* GRILLE SILOS */
+        .silo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .silo-item {
+            background: #222; border-radius: 12px; padding: 15px; text-align: center; border: 2px solid #333; 
+            position: relative; overflow: hidden; transition: all 0.2s;
+        }
+        .silo-item.full { border-color: var(--danger); }
+        .silo-bar-bg { width: 10px; height: 100%; background: #111; position: absolute; right: 0; top: 0; }
+        .silo-bar-fill { width: 100%; background: var(--primary); position: absolute; bottom: 0; transition: height 1s; }
+        .silo-pct { position: absolute; top: 5px; right: 15px; font-size: 0.7rem; color: #888; font-weight: bold; }
+
+        /* VIEW SWITCHER (STOCKS) */
+        .view-switch { display: flex; background: #222; border-radius: 10px; padding: 4px; margin-bottom: 20px; }
+        .switch-btn { flex: 1; padding: 10px; border: none; background: transparent; color: #666; font-weight: bold; border-radius: 8px; transition: 0.2s; }
+        .switch-btn.active { background: var(--primary); color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+
+        /* TABS INTERNES */
+        .sub-tab-container { display:flex; background:#222; border-radius:12px; padding:5px; margin-bottom:20px; overflow-x: auto; white-space: nowrap; gap: 5px; }
+        .sub-tab-btn { flex: 0 0 auto; padding: 10px 18px; border-radius: 8px; border: none; background: transparent; color: #777; font-size: 0.95rem; font-weight: bold; }
+        .sub-tab-btn.active { background: var(--primary); color: white; }
+
+        /* LISTES */
+        .list-row { padding: 15px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; background: #222; }
+        .stock-card { background: var(--input-bg); border-left: 4px solid var(--primary); padding: 15px; margin-bottom: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem; cursor: pointer; }
+        
+        /* TRUFFE ITEMS */
+        .truffe-item { background: #252525; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--truffe); display: flex; justify-content: space-between; align-items: center; }
+        .truffe-item.urgent { border-left-color: var(--danger); background: rgba(206, 24, 30, 0.1); }
+        
+        /* MODE EDITION TRUFFE */
+        .truffe-item.edit-mode { display: block; border-left-color: #555; background: #161616; border: 1px dashed #555; }
+        .truffe-edit-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        .edit-input { background: #000; border: 1px solid #444; padding: 0 10px; height: 45px; margin: 0; width: 100%; border-radius: 6px; color: white; font-size: 1rem; }
+        .edit-label { font-size: 0.7rem; color: #888; margin-bottom: 2px; display: block; }
+
+        /* BOTTOM NAV */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 75px;
+            background: #161616; border-top: 1px solid #333;
+            display: flex; justify-content: space-around; align-items: center;
+            z-index: 100; padding-bottom: env(safe-area-inset-bottom);
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #555; flex: 1; height: 100%; text-decoration: none; border: none; background: none; font-size: 0.7rem; }
+        .nav-item.active { color: var(--primary); }
+        .nav-icon { font-size: 1.6rem; margin-bottom: 4px; }
+
+        /* MODAL */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; display: none; justify-content: center; align-items: center; }
+        .modal-card { background: #1a1a1a; width: 90%; max-height: 80vh; overflow-y: auto; border-radius: 12px; padding: 20px; border: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { text-align: left; color: var(--text-muted); font-size: 0.8rem; border-bottom: 1px solid #444; padding: 10px 5px; }
+        td { border-bottom: 1px solid #333; padding: 15px 5px; font-size: 1rem; }
+
+        /* TOAST */
+        #toast { position: fixed; top: 20px; right: 20px; background: #333; color: white; padding: 15px 25px; border-radius: 50px; border: 2px solid var(--primary); font-weight: bold; z-index: 10000; transform: translateX(150%); transition: transform 0.3s; display: flex; align-items: center; gap: 10px; }
+        #toast.show { transform: translateX(0); }
+
+        /* HELPERS */
+        .row { display: flex; gap: 15px; } .col { flex: 1; }
+        .text-big { font-size: 1.5rem; font-weight: 900; }
+    </style>
+</head>
+<body>
+
+    <div id="toast">✅ Action effectuée</div>
+
+    <div id="modal-silo-detail" class="modal-overlay" onclick="closeModal()">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <h3 id="md-title" style="margin-top:0; color:var(--primary)">Détail</h3>
+            <table id="md-table">
+                <thead id="md-head"></thead>
+                <tbody id="md-body"></tbody>
+            </table>
+            <button class="btn btn-sm" style="margin-top:20px; width:100%; background:#444;" onclick="closeModal()">Fermer</button>
+        </div>
+    </div>
+
+    <div class="header">
+        <h2>AgriManager</h2>
+        <div class="site-badge" id="syncStatus">...</div>
+    </div>
+
+    <div id="splash-screen" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#111; z-index:99999; display:flex; justify-content:center; align-items:center; transition:opacity 0.5s;">
+        <div style="text-align:center">
+            <h1 style="color:white; font-size:2.5rem; margin-bottom:20px;">Agri<span style="color:var(--primary)">Manager</span></h1>
+            <div style="width:50px; height:50px; border:5px solid #333; border-top-color:var(--primary); border-radius:50%; animation:spin 1s linear infinite; margin:0 auto;"></div>
+        </div>
+    </div>
+    <style>@keyframes spin { 100% { transform: rotate(360deg); } }</style>
+
+    <div id="screen-stock" class="screen active">
+        <div class="view-switch">
+            <button class="switch-btn active" id="btn-view-silo" onclick="switchStockView('silos')">🏭 Cellules</button>
+            <button class="switch-btn" id="btn-view-tier" onclick="switchStockView('tiers')">👥 Tiers</button>
+        </div>
+
+        <div id="view-silos">
+            <div id="siloGrid" class="silo-grid"></div>
+            <div class="card" style="margin-top:20px;">
+                <h4 style="margin:0 0 10px 0; color:#aaa;">Total Ferme</h4>
+                <div id="globalStats" class="text-big" style="color:var(--primary)">0 T</div>
+            </div>
+        </div>
+
+        <div id="view-tiers" style="display:none;">
+            <p style="color:#666; font-size:0.8rem; margin-bottom:15px; text-align:center;">Appuyez sur un nom pour le détail des stocks.</p>
+            <div id="stockList"></div>
+        </div>
+    </div>
+
+    <div id="screen-mouv" class="screen">
+        <div class="sub-tab-container">
+            <button class="sub-tab-btn active" onclick="showSubTab('tab-entree', this)">🚜 Entrée</button>
+            <button class="sub-tab-btn" onclick="showSubTab('tab-sortie', this)">🚛 Sortie</button>
+            <button class="sub-tab-btn" onclick="showSubTab('tab-trans', this)">⇄ Transfert</button>
+            <button class="sub-tab-btn" style="color:var(--contract)" onclick="showSubTab('tab-contrat', this)">📜 Contrats</button>
+            <button class="sub-tab-btn" style="color:#aaa" onclick="showSubTab('tab-data', this)">⚙️ Données</button>
+        </div>
+
+        <div id="tab-entree" class="sub-tab">
+            <div class="card">
+                <label>Client</label><select id="inClient"></select>
+                <div class="row"><div class="col"><label>Céréale</label><select id="inGrain"></select></div><div class="col"><label>PS</label><input type="number" id="inPS" placeholder="76" inputmode="decimal"></div></div>
+                <label>Destination</label><select id="inSilo"></select>
+                <div class="row">
+                    <div class="col"><label>Tare</label><input type="number" id="inTare" inputmode="decimal" oninput="calcNet('in')"></div>
+                    <div class="col"><label>Brut</label><input type="number" id="inBrut" inputmode="decimal" oninput="calcNet('in')"></div>
+                </div>
+                <label>Poids Net (kg)</label>
+                <input type="number" id="inNet" inputmode="decimal" style="font-weight:bold; color:var(--primary); font-size:1.4rem;">
+                <button class="btn" onclick="submitEntree()">Valider Réception</button>
+            </div>
+        </div>
+
+        <div id="tab-sortie" class="sub-tab" style="display:none;">
+            <div class="card" style="border-left: 4px solid var(--danger);">
+                <label style="color:var(--danger)">Poids Total Camion (kg)</label>
+                <input type="number" id="outTotal" inputmode="decimal" style="font-size:1.5rem; font-weight:bold; color:var(--danger); border-color:var(--danger);" oninput="updateSortieCalc()">
+                <label>Silo</label><select id="outSilo" onchange="updateSortieCalc()"></select>
+                <label>Contrat</label><select id="outContract"><option value="">-- Hors Contrat --</option></select>
+                <hr style="border-color:#333; margin:20px 0;">
+                <label style="color:var(--accent)">Répartition (Lots)</label>
+                <div style="background:#252525; padding:10px; border-radius:8px; margin-bottom:10px;">
+                    <label>Propriétaire</label><select id="outOwnerSplit"></select>
+                    <div class="row">
+                        <div class="col"><label>Poids</label><input type="number" id="outWeightSplit" inputmode="decimal"></div>
+                        <div class="col" style="display:flex; align-items:flex-end; padding-bottom:15px;"><button class="btn btn-sm" onclick="addSplit()">AJOUTER</button></div>
+                    </div>
+                </div>
+                <div id="splitListContainer"></div>
+                <div style="text-align:right; margin-top:10px; font-weight:bold; font-size:1.1rem;">Reste : <span id="outRemaining" style="color:var(--primary)">0</span> kg</div>
+                <button class="btn btn-danger" onclick="submitSortie()">Valider Expédition</button>
+            </div>
+        </div>
+
+        <div id="tab-trans" class="sub-tab" style="display:none;">
+            <div class="row" style="margin-bottom:15px;">
+                <button class="col btn btn-sm" id="btnModePhys" style="background:var(--transfer); opacity:1;" onclick="setTransMode('phys')">Physique</button>
+                <button class="col btn btn-sm" id="btnModeInterne" style="background:#444; opacity:0.5;" onclick="setTransMode('interne')">Interne</button>
+            </div>
+            <div id="trans-phys" class="card" style="border-left:4px solid var(--transfer)">
+                <h4 style="margin-top:0; color:var(--transfer)">Déplacement</h4>
+                <label>De</label><select id="tpFrom"></select>
+                <label>Vers</label><select id="tpTo"></select>
+                <label>Poids (kg)</label><input type="number" id="tpWeight" inputmode="decimal">
+                <button class="btn btn-transfer" onclick="submitTransPhys()">Déplacer</button>
+            </div>
+            <div id="trans-interne" class="card" style="border-left:4px solid var(--proprio); display:none;">
+                <h4 style="margin-top:0; color:var(--proprio)">Cession</h4>
+                <label>Silo</label><select id="tiSilo"></select>
+                <div class="row"><div class="col"><label>Vendeur</label><select id="tiSeller"></select></div><div class="col"><label>Acheteur</label><select id="tiBuyer"></select></div></div>
+                <label>Poids (kg)</label><input type="number" id="tiWeight" inputmode="decimal">
+                <button class="btn btn-proprio" onclick="submitTransInterne()">Valider Cession</button>
+            </div>
+        </div>
+
+        <div id="tab-contrat" class="sub-tab" style="display:none;">
+            <div class="card" style="border-left:4px solid var(--contract)">
+                <h4 style="margin-top:0; color:var(--contract)">Nouveau Contrat</h4>
+                <div class="row"><div class="col"><label>N°</label><input type="text" id="ctrNum"></div><div class="col"><label>Date</label><input type="date" id="ctrDate"></div></div>
+                <label>Vendeur</label><select id="ctrSeller"></select>
+                <div class="row"><div class="col"><label>Céréale</label><select id="ctrGrain"></select></div><div class="col"><label>Tonnes</label><input type="number" id="ctrTons" inputmode="decimal"></div></div>
+                <label>Prix (€/T)</label><input type="number" id="ctrPrice" inputmode="decimal">
+                <button class="btn btn-contract" onclick="createContract()">Enregistrer</button>
+            </div>
+        </div>
+
+        <div id="tab-data" class="sub-tab" style="display:none;">
+            <div class="card">
+                <h4 style="margin-top:0">Clients</h4>
+                <div class="row"><input id="newClient" placeholder="Nom"><button class="btn btn-sm" style="width:auto; margin-bottom:15px;" onclick="addData('c')">OK</button></div>
+                <div id="listClients"></div>
+            </div>
+            <div class="card">
+                <h4 style="margin-top:0">Céréales</h4>
+                <div class="row">
+                    <div class="col" style="flex:2"><input id="newGrain" placeholder="Nom"></div>
+                    <div class="col"><input id="newGrainPS" placeholder="PS" type="number" inputmode="decimal"></div>
+                    <button class="btn btn-sm" style="width:auto; margin-bottom:15px;" onclick="addData('g')">OK</button>
+                </div>
+                <div id="listGrains"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-phyto" class="screen">
+        <h3 style="margin-top:0; color:var(--phyto)">Local Phyto</h3>
+        <div class="card" style="border-left:4px solid var(--phyto)">
+            <label>Produit</label>
+            <input list="phList" id="phName" placeholder="Nom du produit">
+            <datalist id="phList"></datalist>
+            <div class="row">
+                <div class="col"><label>Quantité</label><input type="number" id="phQty" inputmode="decimal"></div>
+                <div class="col"><label>Unité</label><select id="phUnit"><option>L</option><option>Kg</option><option>U</option></select></div>
+            </div>
+            <div class="row">
+                <button class="col btn btn-phyto" onclick="mouvPhyto('in')">➕ Entrée</button>
+                <button class="col btn btn-danger" onclick="mouvPhyto('out')">➖ Sortie</button>
+            </div>
+        </div>
+        <div class="card" style="padding:0; overflow:hidden;">
+            <table style="margin:0;">
+                <thead><tr style="background:#222;"><th>Produit</th><th>Stock</th><th>Unit</th></tr></thead>
+                <tbody id="phytoTable"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="screen-truffe" class="screen">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h3 style="color:var(--truffe); margin:0;">Truffes</h3>
+            <div style="background:#333; padding:8px 15px; border-radius:12px; font-weight:bold;">Total: <span id="totalTruffe" style="color:var(--primary)">0</span> g</div>
+        </div>
+        <div class="card" style="border-left:4px solid var(--truffe)">
+            <label>Nouvelle Commande</label>
+            <input type="text" id="tfName" placeholder="Client">
+            <div class="row">
+                <div class="col"><label>Poids (g)</label><input type="number" id="tfWeight" inputmode="numeric"></div>
+                <div class="col"><label>Prix (€)</label><input type="number" id="tfPrice" inputmode="decimal"></div>
+            </div>
+            <div class="row">
+                <div class="col"><label>Pour le...</label><input type="date" id="tfDate"></div>
+            </div>
+            <button class="btn" style="background:var(--truffe)" onclick="addTruffe()">Ajouter</button>
+        </div>
+        <div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
+            <button class="btn-sm" style="background:transparent; border:1px solid #555; color:#aaa;" onclick="toggleEdit()" id="btnEditMode">Mode Édition</button>
+        </div>
+        <div id="truffeListPending"></div>
+        <h4 style="color:#666; border-bottom:1px solid #333; padding-bottom:5px; margin-top:30px;">Livrées</h4>
+        <div id="truffeListHistory"></div>
+    </div>
+
+    <nav class="bottom-nav">
+        <button class="nav-item active" onclick="switchTab('stock', this)"><span class="nav-icon">🌍</span><span>Stocks</span></button>
+        <button class="nav-item" onclick="switchTab('mouv', this)"><span class="nav-icon">🚜</span><span>Gestion</span></button>
+        <button class="nav-item" onclick="switchTab('phyto', this)"><span class="nav-icon" style="color:var(--phyto)">🧪</span><span style="color:var(--phyto)">Phyto</span></button>
+        <button class="nav-item" onclick="switchTab('truffe', this)"><span class="nav-icon" style="color:var(--truffe)">🍄</span><span style="color:var(--truffe)">Truffe</span></button>
+    </nav>
+
+    <script type="module">
+        setTimeout(() => { document.getElementById('splash-screen').style.opacity = 0; setTimeout(()=>document.getElementById('splash-screen').remove(), 500); }, 1500);
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        const firebaseConfig = { apiKey: "AIzaSyDgLZDKaU4a9U7IJO9lhnEOdksTJh0OyP4", authDomain: "agristock-93cc7.firebaseapp.com", databaseURL: "https://agristock-93cc7-default-rtdb.europe-west1.firebasedatabase.app", projectId: "agristock-93cc7", storageBucket: "agristock-93cc7.firebasestorage.app", messagingSenderId: "209362221476", appId: "1:209362221476:web:4f543f26bc0e0444dea931" };
+        const app = initializeApp(firebaseConfig); const dbRef = ref(getDatabase(app), 'ferme_data');
+
+        let db = { silos: [], grains: [], clients: [], truffes: [], contracts: [], phytos: [] };
+        let splitList = [], truffeEdit = false;
+
+        onValue(dbRef, (snap) => {
+            const val = snap.val();
+            if(val) {
+                db = {...db, ...val};
+                ['silos','grains','clients','truffes','contracts','phytos'].forEach(k => { if(!db[k]) db[k]=[]; if(!Array.isArray(db[k])) db[k]=Object.values(db[k]); });
+                db.grains = db.grains.map(g => (typeof g === 'string') ? {name:g, ps:76} : g);
+                db.silos.forEach(s => { if(!s.current) s.current=0; if(!s.owners) s.owners={}; });
+                renderAll();
+                document.getElementById('syncStatus').innerText = "🟢";
+            }
+        });
+        function updateCloud() { set(dbRef, db); }
+
+        function renderAll() { renderSilos(); populateSelects(); renderTruffes(); renderStocks(); renderDataLists(); renderPhyto(); }
+
+        /* --- 1. STOCKS --- */
+        window.switchStockView = (mode) => {
+            document.getElementById('view-silos').style.display = mode==='silos'?'block':'none';
+            document.getElementById('view-tiers').style.display = mode==='tiers'?'block':'none';
+            document.getElementById('btn-view-silo').className = mode==='silos'?'switch-btn active':'switch-btn';
+            document.getElementById('btn-view-tier').className = mode==='tiers'?'switch-btn active':'switch-btn';
+        }
+        function renderSilos() {
+            const c = document.getElementById('siloGrid'); c.innerHTML = ''; let tot = 0;
+            db.silos.forEach(s => {
+                tot += s.current;
+                const pct = Math.min(100, Math.round((s.current/(s.capacity*1000))*100));
+                c.innerHTML += `<div class="silo-item ${pct>90?'full':''}" onclick="openSiloDetail(${s.id})">
+                    <div class="silo-pct">${pct}%</div>
+                    <div class="silo-bar-bg"><div class="silo-bar-fill" style="height:${pct}%; background:${pct>90?'var(--danger)':'var(--primary)'}"></div></div>
+                    <div class="silo-name">${s.name}</div>
+                    <div class="silo-info">${s.content||'-'}</div>
+                    <div class="silo-weight">${Math.round(s.current/1000)}T</div>
+                </div>`;
+            });
+            document.getElementById('globalStats').innerText = (tot/1000).toFixed(1) + ' T';
+        }
+        window.renderStocks = () => {
+            const list = document.getElementById('stockList'); list.innerHTML='';
+            const totals = {};
+            db.silos.forEach(s => { for(let o in s.owners) { if(s.owners[o]>0) totals[o] = (totals[o]||0) + s.owners[o]; } });
+            for(let c in totals) { list.innerHTML += `<div class="stock-card" onclick="openClientDetail('${c}')"><strong>${c}</strong><span>${totals[c].toLocaleString()} kg</span></div>`; }
+        }
+        
+        /* --- DETAILS MODAL --- */
+        window.openSiloDetail = (id) => {
+            const s = db.silos.find(x=>x.id==id);
+            document.getElementById('md-title').innerText = s.name;
+            document.getElementById('md-head').innerHTML = `<tr><th>Propriétaire</th><th>Poids (kg)</th></tr>`;
+            const b = document.getElementById('md-body'); b.innerHTML = '';
+            for(let o in s.owners) { if(s.owners[o]>0) b.innerHTML += `<tr><td>${o}</td><td>${s.owners[o]}</td></tr>`; }
+            document.getElementById('modal-silo-detail').style.display = 'flex';
+        }
+        window.openClientDetail = (client) => {
+            document.getElementById('md-title').innerText = client;
+            document.getElementById('md-head').innerHTML = `<tr><th>Silo</th><th>Grain</th><th>Poids</th></tr>`;
+            const b = document.getElementById('md-body'); b.innerHTML = '';
+            db.silos.forEach(s => { if(s.owners[client]>0) b.innerHTML += `<tr><td>${s.name}</td><td>${s.content}</td><td>${s.owners[client]}</td></tr>`; });
+            document.getElementById('modal-silo-detail').style.display = 'flex';
+        }
+        window.closeModal = () => document.getElementById('modal-silo-detail').style.display='none';
+
+        /* --- 2. GESTION --- */
+        function populateSelects() {
+            const cl = db.clients.map(c=>`<option>${c}</option>`).join('');
+            const gr = db.grains.map(g=>`<option>${g.name}</option>`).join('');
+            const sl = db.silos.map(s=>`<option value="${s.id}">${s.name} (${s.content||'-'})</option>`).join('');
+            const slFull = db.silos.filter(s=>s.current>0).map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+            const ctr = '<option value="">-- Hors Contrat --</option>'+db.contracts.filter(c=>!c.finished).map(c=>`<option value="${c.id}">${c.num} - ${c.seller}</option>`).join('');
+            document.getElementById('inClient').innerHTML = cl; document.getElementById('ctrSeller').innerHTML = cl; document.getElementById('outOwnerSplit').innerHTML = cl; document.getElementById('tiSeller').innerHTML = cl; document.getElementById('tiBuyer').innerHTML = cl;
+            document.getElementById('inGrain').innerHTML = gr; document.getElementById('ctrGrain').innerHTML = gr;
+            document.getElementById('inSilo').innerHTML = sl; document.getElementById('tpTo').innerHTML = sl;
+            document.getElementById('outSilo').innerHTML = slFull; document.getElementById('tpFrom').innerHTML = slFull; document.getElementById('tiSilo').innerHTML = slFull;
+            document.getElementById('outContract').innerHTML = ctr;
+            document.getElementById('phList').innerHTML = db.phytos.map(p=>`<option value="${p.name}">`).join('');
+        }
+        function renderDataLists() {
+            const cList = document.getElementById('listClients'); cList.innerHTML = '';
+            db.clients.forEach(c => cList.innerHTML += `<div class="list-row"><span>${c}</span><button class="btn btn-sm btn-danger" onclick="delData('c','${c}')">X</button></div>`);
+            const gList = document.getElementById('listGrains'); gList.innerHTML = '';
+            db.grains.forEach(g => gList.innerHTML += `<div class="list-row"><span>${g.name} (PS:${g.ps})</span><button class="btn btn-sm btn-danger" onclick="delData('g','${g.name}')">X</button></div>`);
+        }
+        
+        /* ACTIONS */
+        window.submitEntree = () => {
+            const w=parseFloat(document.getElementById('inNet').value), sid=document.getElementById('inSilo').value, c=document.getElementById('inClient').value;
+            if(!w||!sid) return alert('Données manquantes');
+            const s=db.silos.find(x=>x.id==sid); s.current+=w; s.content=document.getElementById('inGrain').value; s.owners[c]=(s.owners[c]||0)+w;
+            updateCloud(); document.getElementById('inNet').value=''; toast('Entrée OK');
+        };
+        window.addSplit = () => {
+            const owner = document.getElementById('outOwnerSplit').value, w = parseFloat(document.getElementById('outWeightSplit').value), sid = document.getElementById('outSilo').value;
+            if(!w || !sid) return alert('Poids requis');
+            const s = db.silos.find(x=>x.id==sid);
+            if((s.owners[owner]||0)<w) return alert('Stock insuffisant');
+            splitList.push({owner, w}); renderSplits();
+            document.getElementById('outWeightSplit').value = '';
+        };
+        window.removeSplit = (i) => { splitList.splice(i,1); renderSplits(); };
+        function renderSplits() {
+            const c = document.getElementById('splitListContainer'); c.innerHTML = '';
+            splitList.forEach((s,i) => c.innerHTML += `<div class="list-row" style="margin-bottom:5px; border-radius:6px;"><span>${s.owner}</span><b>${s.w} kg</b><button class="btn btn-sm btn-danger" onclick="removeSplit(${i})">X</button></div>`);
+            updateSortieCalc();
+        }
+        window.updateSortieCalc = () => {
+            const tot = parseFloat(document.getElementById('outTotal').value) || 0;
+            const assigned = splitList.reduce((a,b)=>a+b.w, 0);
+            const remain = tot - assigned;
+            const el = document.getElementById('outRemaining'); el.innerText = remain; el.style.color = remain===0 ? 'var(--primary)' : 'var(--danger)';
+        };
+        window.submitSortie = () => {
+            const tot = parseFloat(document.getElementById('outTotal').value);
+            const assigned = splitList.reduce((a,b)=>a+b.w, 0);
+            if(Math.abs(tot-assigned)>5) return alert('Ecart de poids !');
+            const s = db.silos.find(x=>x.id==document.getElementById('outSilo').value);
+            splitList.forEach(sp => { s.owners[sp.owner]-=sp.w; if(s.owners[sp.owner]<=0) delete s.owners[sp.owner]; });
+            s.current -= tot; if(s.current<=0){s.current=0; s.content=null;}
+            const cid = document.getElementById('outContract').value;
+            if(cid) { const ctr = db.contracts.find(x=>x.id==cid); if(ctr) ctr.delivered = (ctr.delivered||0) + tot; }
+            updateCloud(); splitList=[]; renderSplits(); document.getElementById('outTotal').value=''; toast('Sortie Validée');
+        }
+        window.submitTransPhys = () => {
+            const src=db.silos.find(x=>x.id==document.getElementById('tpFrom').value), dst=db.silos.find(x=>x.id==document.getElementById('tpTo').value), w=parseFloat(document.getElementById('tpWeight').value);
+            if(src.current<w) return alert('Stock insuffisant');
+            src.current-=w; dst.current+=w; dst.content=src.content;
+            const o=Object.keys(src.owners)[0]; if(o){src.owners[o]-=w; dst.owners[o]=(dst.owners[o]||0)+w;}
+            updateCloud(); toast('Transfert OK');
+        }
+        window.submitTransInterne = () => {
+            const s=db.silos.find(x=>x.id==document.getElementById('tiSilo').value), sel=document.getElementById('tiSeller').value, buy=document.getElementById('tiBuyer').value, w=parseFloat(document.getElementById('tiWeight').value);
+            if((s.owners[sel]||0)<w) return alert('Stock insuffisant');
+            s.owners[sel]-=w; s.owners[buy]=(s.owners[buy]||0)+w; updateCloud(); toast('Cession OK');
+        }
+        window.createContract = () => {
+            db.contracts.push({id:Date.now(), num:document.getElementById('ctrNum').value, seller:document.getElementById('ctrSeller').value, grain:document.getElementById('ctrGrain').value, finished:false});
+            updateCloud(); toast('Contrat Créé');
+        }
+        window.addData = (t) => {
+            const v=document.getElementById(t==='c'?'newClient':'newGrain').value;
+            if(v) { if(t==='c') db.clients.push(v); else db.grains.push({name:v, ps:parseFloat(document.getElementById('newGrainPS').value)||76}); updateCloud(); toast('Ajouté'); }
+        }
+        window.delData = (t,v) => { if(confirm('Suppr ?')) { if(t==='c') db.clients=db.clients.filter(x=>x!==v); else db.grains=db.grains.filter(x=>x.name!==v); updateCloud(); } }
+
+        /* --- 3. PHYTO --- */
+        function renderPhyto() {
+            const t = document.getElementById('phytoTable'); t.innerHTML = '';
+            db.phytos.forEach(p => t.innerHTML += `<tr><td>${p.name}</td><td>${p.qty}</td><td>${p.unit}</td></tr>`);
+        }
+        window.mouvPhyto = (type) => {
+            const n = document.getElementById('phName').value, q = parseFloat(document.getElementById('phQty').value), u = document.getElementById('phUnit').value;
+            if(!n || !q) return alert('Erreur saisie');
+            let p = db.phytos.find(x => x.name === n);
+            if(!p) { p = {name:n, qty:0, unit:u}; db.phytos.push(p); }
+            if(type==='in') p.qty += q; else p.qty -= q;
+            if(p.qty <= 0) db.phytos = db.phytos.filter(x => x.name !== n);
+            updateCloud(); document.getElementById('phQty').value=''; toast('Stock mis à jour');
+        }
+
+        /* --- 4. TRUFFES (Corrected Edit Mode) --- */
+        window.renderTruffes = () => {
+            const pList=document.getElementById('truffeListPending'), hList=document.getElementById('truffeListHistory'); pList.innerHTML=''; hList.innerHTML='';
+            const pending = db.truffes.filter(t=>!t.validated).sort((a,b) => (a.deadline||'9999') > (b.deadline||'9999') ? 1 : -1);
+            const history = db.truffes.filter(t=>t.validated).sort((a,b) => b.id - a.id);
+            document.getElementById('totalTruffe').innerText = pending.reduce((a,b)=>a+(parseFloat(b.weight)||0),0) + ' g';
+
+            if(pending.length===0) pList.innerHTML = '<div style="text-align:center; color:#555; padding:10px;">Rien en cours</div>';
+            
+            pending.forEach(t => {
+                let html = '';
+                if(truffeEdit) {
+                    html = `
+                    <div class="truffe-item edit-mode">
+                        <div class="truffe-edit-row">
+                            <div style="flex:1"><span class="edit-label">Nom</span><input class="edit-input" value="${t.name}" onchange="updTruffe(${t.id},'name',this.value)"></div>
+                            <div style="flex:1"><span class="edit-label">Pour le</span><input class="edit-input" type="date" value="${t.deadline}" onchange="updTruffe(${t.id},'deadline',this.value)"></div>
+                        </div>
+                        <div class="truffe-edit-row">
+                            <div style="flex:1"><span class="edit-label">Poids (g)</span><input class="edit-input" type="number" value="${t.weight}" onchange="updTruffe(${t.id},'weight',this.value)"></div>
+                            <div style="flex:1"><span class="edit-label">Prix (€)</span><input class="edit-input" type="number" value="${t.price}" onchange="updTruffe(${t.id},'price',this.value)"></div>
+                        </div>
+                        <button class="btn btn-sm btn-danger" style="width:100%;" onclick="delTruffe(${t.id})">Supprimer Commande</button>
+                    </div>`;
+                } else {
+                    html = `<div class="truffe-item ${t.deadline && new Date(t.deadline)<new Date(Date.now()+86400000*2)?'urgent':''}">
+                        <div><div style="font-weight:bold; font-size:1.1rem;">${t.name}</div><div style="color:#aaa; font-size:0.85rem;">Pour: <span style="color:white; font-weight:bold;">${t.deadline?new Date(t.deadline).toLocaleDateString().slice(0,5):'-'}</span></div></div>
+                        <div style="text-align:right"><div style="font-weight:bold; font-size:1.3rem;">${t.weight}g</div><div style="font-size:0.8rem;">${t.price}€</div></div>
+                        <div style="display:flex; flex-direction:column; gap:5px; margin-left:10px;"><button class="btn btn-sm" onclick="validTruffe(${t.id})">✅</button><button class="btn btn-sm btn-danger" onclick="delTruffe(${t.id})">🗑️</button></div>
+                    </div>`;
+                }
+                pList.innerHTML += html;
+            });
+            history.forEach(t => hList.innerHTML += `<div class="list-row" style="opacity:0.6;"><span>${t.name}</span><span>${t.weight}g</span></div>`);
+        };
+        window.addTruffe=()=>{ const n=document.getElementById('tfName').value, w=document.getElementById('tfWeight').value; if(!n||!w) return alert('Erreur'); db.truffes.push({id:Date.now(), name:n, weight:w, price:document.getElementById('tfPrice').value, deadline:document.getElementById('tfDate').value, validated:false}); updateCloud(); document.getElementById('tfName').value=''; document.getElementById('tfWeight').value=''; toast('Ajouté'); };
+        window.validTruffe=(id)=>{ if(confirm('Valider ?')) { db.truffes.find(x=>x.id==id).validated=true; updateCloud(); toast('Validé'); } };
+        window.delTruffe=(id)=>{ if(confirm('Suppr ?')) { db.truffes=db.truffes.filter(x=>x.id!==id); updateCloud(); } };
+        window.toggleEdit=()=>{ truffeEdit=!truffeEdit; renderTruffes(); };
+        window.updTruffe=(id,f,v)=>{ const t=db.truffes.find(x=>x.id==id); if(f==='weight'||f==='price') v=parseFloat(v)||0; t[f]=v; updateCloud(); };
+
+        /* UTILS */
+        window.switchTab=(id,b)=>{ document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active')); document.getElementById('screen-'+id).classList.add('active'); document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active')); b.classList.add('active'); };
+        window.showSubTab=(id,b)=>{ document.querySelectorAll('.sub-tab').forEach(x=>x.style.display='none'); document.getElementById(id).style.display='block'; b.parentNode.querySelectorAll('.sub-tab-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); };
+        window.setTransMode=(m)=>{ document.getElementById('trans-phys').style.display=m==='phys'?'block':'none'; document.getElementById('trans-interne').style.display=m==='interne'?'block':'none'; document.getElementById('btnModePhys').style.opacity=m==='phys'?1:0.5; document.getElementById('btnModeInterne').style.opacity=m==='interne'?1:0.5; };
+        window.calcNet=(p)=>{ const t=parseFloat(document.getElementById(p+'Tare').value)||0, b=parseFloat(document.getElementById(p+'Brut').value)||0; if(t&&b) document.getElementById(p+'Net').value=Math.abs(b-t); };
+        window.toast=(msg)=>{ const t=document.getElementById('toast'); t.innerText="✅ "+msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); };
+    </script>
+</body>
+</html>
